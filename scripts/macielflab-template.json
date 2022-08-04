@@ -1,0 +1,387 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Resources": {
+		"stepfunction": {
+			"Type": "AWS::StepFunctions::StateMachine",
+			"Properties": {
+				"StateMachineName": "macielflab-macieFindingOrchestration",
+				"StateMachineType": "STANDARD",
+				"DefinitionString": "{\n  \"Comment\": \"Macie Findings Orchestration\",\n   \"StartAt\": \"Success\",\n   \"States\": {\n    \"Success\": {\n      \"Type\": \"Succeed\"\n    }\n  }\n}",
+				"RoleArn": {
+					"Fn::GetAtt": [
+						"StepFunctionExecutionRole",
+						"Arn"
+					]
+				}
+			}
+		},
+		"lambdafunction": {
+			"Type": "AWS::Lambda::Function",
+			"Properties": {
+				"Description": "Lambda function to process the Macie findings document and extract unique columns to updated LF tag values.",
+				"FunctionName": "macielflab-transformationFunction",
+				"Handler": "index.handler",
+				"Role": {
+					"Fn::GetAtt": [
+						"LambdaExecutionRole",
+						"Arn"
+					]
+				},
+				"Timeout": 360,
+				"Runtime": "nodejs16.x",
+				"Code": {
+					"ZipFile": "/* \nMIT No Attribution\n\nCopyright 2021 Amazon.com, Inc. or its affiliates.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this\nsoftware and associated documentation files (the \"Software\"), to deal in the Software\nwithout restriction, including without limitation the rights to use, copy, modify,\nmerge, publish, distribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,\nINCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A\nPARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT\nHOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\nSOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n*/\n\nexports.handler = async (event) => {\n    \n    let sensitiveData = event.detail.classificationDetails.result.sensitiveData;\n    let result = {};\n    result.classifications = new Array();\n    for(let i = 0; i < sensitiveData.length; i++) {\n        let classification = sensitiveData[i];\n        let columnSet = new Set();\n\n        let classificationObj = {};\n        classificationObj.classificationValue= classification.category;\n        \n        for(let j = 0; j < classification.detections.length; j++) {\n            let detection=classification.detections[j];\n            for(let k = 0; k < detection.occurrences.cells.length; k++) {\n                columnSet.add(detection.occurrences.cells[k].columnName);\n            }\n        }\n        classificationObj.columns=Array.from(columnSet);\n        result.classifications.push(classificationObj);\n    }\n    const response = {\n        statusCode: 200,\n        body: result\n    };\n    return response;\n};"
+				}
+			}
+		},
+		"sourceS3bucket": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-macielflab-data"
+				}
+			}
+		},
+		"athenaS3bucket": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-macielflab-athena"
+				}
+			}
+		},
+		"StepFunctionExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"states.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/macielflab/",
+				"Policies": [
+					{
+						"PolicyName": "MaciePermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"macie2:CreateClassificationJob"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:macie2:*:${AWS::AccountId}:classification-job/*"
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "LambdaPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"lambda:*"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*:*"
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "LFPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"lakeformation:GetResourceLFTags",
+										"lakeformation:SearchDatabasesByLFTags",
+										"lakeformation:CreateLFTag",
+										"lakeformation:SearchTablesByLFTags",
+										"lakeformation:RemoveLFTagsFromResource",
+										"lakeformation:ListLFTags",
+										"lakeformation:AddLFTagsToResource",
+										"lakeformation:DeleteLFTag",
+										"lakeformation:UpdateLFTag",
+										"lakeformation:GetLFTag"
+									],
+									"Resource": [
+										"*"
+									]
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "GluePermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": "glue:GetTable",
+									"Resource": [
+										{"Fn::Sub": "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/customer/customers"},
+										{"Fn::Sub": "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"},
+										{"Fn::Sub": "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/customer"}
+									]
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "macielflab-StepFunctionExecutionRole"
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "85094c66-0e90-45f4-94d9-6b3671d0885e"
+				}
+			}
+		},
+		"GlueExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"glue.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/macielflab/",
+				"ManagedPolicyArns": [
+					"arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+				],
+				"Policies": [
+					{
+						"PolicyName": "S3permissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"s3:GetObject",
+										"s3:PutObject"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-macielflab-data/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-macielflab-data"
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "macielflab-GlueExecutionRole"
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "85094c66-0e90-45f4-94d9-6b3671d0885e"
+				}
+			}
+		},
+		"EventBridgeExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"events.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/macielflab/",
+				"ManagedPolicyArns": [
+					"arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+				],
+				"Policies": [
+					{
+						"PolicyName": "StepFunctionPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"states:StartExecution"
+									],
+									"Resource": [
+										{
+											"Ref": [
+												"stepfunction",
+												"Arn"
+											]
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "macielflab-EventBridgeExecutionRole"
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "85094c66-0e90-45f4-94d9-6b3671d0885e"
+				}
+			}
+		},
+		"LambdaExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"lambda.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/macielflab/",
+				"Policies": [
+					{
+						"PolicyName": "S3permissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"logs:CreateLogStream",
+										"logs:PutLogEvents"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/MacieFindingsProcessing:*"
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "macielflab-LambdaExecutionRole"
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "85094c66-0e90-45f4-94d9-6b3671d0885e"
+				}
+			}
+		},
+		"CustomerDatabase": {
+			"Type": "AWS::Glue::Database",
+			"Properties": {
+				"CatalogId": {
+					"Ref": "AWS::AccountId"
+				},
+				"DatabaseInput": {
+					"Description": "This customer database for the Macie/Lake Formation TBAC lab",
+					"Name": "customer",
+					"LocationUri": {
+						"Fn::Sub": "s3://${AWS::AccountId}-macielflab-data"
+					}
+				}
+			}
+		},
+		"GlueCrawler": {
+			"Type": "AWS::Glue::Crawler",
+			"Properties": {
+				"DatabaseName": {
+					"Ref": "CustomerDatabase"
+				},
+				"Description": "Crawler for customer data",
+				"Name": "macielflab-CustomerDataCrawler",
+				"Role": {
+					"Fn::GetAtt": [
+						"GlueExecutionRole",
+						"Arn"
+					]
+				},
+				"Targets": {
+					"S3Targets": [
+						{
+							"Path": {
+								"Fn::Sub": "s3://${AWS::AccountId}-macielflab-data/Customers"
+							}
+						}
+					]
+				}
+			}
+		}
+	}
+}

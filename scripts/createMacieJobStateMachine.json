@@ -1,0 +1,26 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "CreateClassificationJob",
+  "States": {
+    "CreateClassificationJob": {
+      "Type": "Task",
+      "Parameters": {
+        "ClientToken": "$$.Execution.Id",
+        "JobType": "ONE_TIME",
+        "Name": "CustomerDataClassification",
+        "S3JobDefinition": {
+          "BucketDefinitions": [
+            {
+              "AccountId": "405685483016",
+              "Buckets": [
+                "405685483016-macie-lf-source"
+              ]
+            }
+          ]
+        }
+      },
+      "Resource": "arn:aws:states:::aws-sdk:macie2:createClassificationJob",
+      "End": true
+    }
+  }
+}
