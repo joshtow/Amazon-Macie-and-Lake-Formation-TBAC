@@ -51,7 +51,7 @@ This template will create the following resources in your account:
 - Lambda function - macielflab-transformationFunction - this function will transform the classification job findings to update the LFTag values.
 - Step Function State Machine - macielflab-macieFindingOrchestration - an empty state machine to be configured.
 
-1. Download the "macielflab-template.json" CloudFormation template from here.
+1. Download the "macielflab-template.json" CloudFormation template from :[CloudFormation Template](scripts/macielflab-template.json).
 2. Navigate to CloudFormation in the AWS Management Console. 
 3. Click "Create stack"
 4. Select "Upload a template file", then "Choose file". Navigate to and select the "macielflab-template.json" JSON template you downloaded. Click "Next".
@@ -106,7 +106,7 @@ We have now granted permission for the Glue crawler to create a table in our dat
 
 In this lab, we're going to use a very small dataset that containers some sensitive personal and financial information. 
 
-1. Download the following CSV file with dummy customer data.
+1. Download the following CSV file with dummy customer data: [customers.csv](data/customers.csv)
 2. Navigate to S3 in the AWS Management Console, and click on the bucket named "<accountID>-macielflab-data".
 3. Click "Create folder", and enter "customers" as the Folder name. Click "Create folder".
 ![](/images/s3/createfolder.PNG)
