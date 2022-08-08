@@ -273,7 +273,7 @@
 									],
 									"Resource": [
 										{
-											"Ref": [
+											"Fn::GetAtt": [
 												"stepfunction",
 												"Arn"
 											]

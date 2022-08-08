@@ -5,7 +5,7 @@ Amazon Macie using Machine Learning to discover sensitive data in S3 buckets. Am
 
 ## Overview
 
-This this lab, we will use Amazon Macie to identify sensitive data in a data lake, and automatically AWS Lake Formation Tag Based Access Control (TBAC) technicals to secure the data and ensure there is no unauthorized access.
+In this lab, we will use Amazon Macie to identify sensitive data in a data lake, and automatically AWS Lake Formation Tag Based Access Control (TBAC) technicals to secure the data and ensure there is no unauthorized access.
 
 Amazon Macie is a fully managed data security and data privacy service that uses machine learning and pattern matching to discover and protect your sensitive data in AWS. AWS Lake Formation is a service that makes it easy to set up a secure data lake in days, allowing you to ensure secure access to your sensitive data using granular controls at the column, row, and cell-levels. Lake Formation tag-based access control (LF-TBAC) works with IAM's attribute-based access control (ABAC) to provide fine-grained access to your data lake resources and data.
 
