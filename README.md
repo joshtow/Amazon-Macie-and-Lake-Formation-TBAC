@@ -22,7 +22,6 @@ The end solution will perform the following steps:
 3. Any findings from the classification job will be published as an event, and an Amazon Event Bridge rule with initiate an AWS Step Functions state machine.
 4. Within the state machine, an AWS Lambda function will transform the findings.
 5. For each column containing sensitive data, the state machine will update the value of the Classification tag in AWS Lake Formation.
-6. An SNS message will be sent once the update is complete, and an email will be sent to the registered email address with the fields that have been updated.
 
 We will also be using Amazon Athena to query the data and validate that access to sensitive data has been removed based on the values set for the Classification LFTag.
 
@@ -51,26 +50,25 @@ This template will create the following resources in your account:
 - Lambda function - macielflab-transformationFunction - this function will transform the classification job findings to update the LFTag values.
 - Step Function State Machine - macielflab-macieFindingOrchestration - an empty state machine to be configured.
 
-1. Download the "macielflab-template.json" CloudFormation template from :[CloudFormation Template](scripts/macielflab-template.json).
-2. Navigate to CloudFormation in the AWS Management Console. 
-3. Click "Create stack"
-4. Select "Upload a template file", then "Choose file". Navigate to and select the "macielflab-template.json" JSON template you downloaded. Click "Next".
-![](/images/cloudformation/template.PNG)
-5. For "Stack name", enter "macilflab-foundation", the click "Next".
+
+1. Click on the following link to launch the CloudFormation process. Please double check you are in the correct account.
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=macilflab-foundation&templateURL=https://s3.amazonaws.com/ee-assets-prod-us-east-1/modules/1e02deca779a4be58b9d50513a464cdc/v1/macielflab/macielflab-template.json)
+2. For "Stack name", enter "macilflab-foundation", the click "Next".
 ![](/images/cloudformation/stackdetails.PNG)
-6. On the "Configure stack options" page, leave all the default values and click "Next".
-7. On the final page, scroll to the end of the page, and mark the check box next to "I acknowledge..." and click "Create stack".
+3. On the "Configure stack options" page, leave all the default values and click "Next".
+4. On the final page, scroll to the end of the page, and mark the check box next to "I acknowledge..." and click "Create stack".
 ![](/images/cloudformation/ackcreate.PNG)
-8. It should take roughly 3 minutes to complete.
+5. It should take roughly 3 minutes to complete.
 
 
 ## Step 1 - Configure AWS Lake Formation
 
 :information_source: If you are already using AWS Lake Formation in this account, you can skip this step, and proceed directly to Step 2. 
+
 :information_source: If you are not already using Lake Formation, but do have resources using the AWS Glue Catalog, please consider impact carefully and permissions will need to be updated. These steps should be completed in a non-production/sandbox account.
 
 By default, AWS Lake Formation uses the IAMAllowedPrincipals group to provide super permissions to users and roles, effectively delegating access control to IAM policies. Before we can use AWS Lake Formation to manage access to our data, we need to revoke access provided by the IAMAllowedPrincipals group. In this way, IAM policies provide coarse grained permssions, while Lake Formation manages fine grained access control to catalog resources and data.
-1. Navigate to Lake Formation in the AWS Management console. 
+1. Navigate to [Lake Formation](https://console.aws.amazon.com/lakeformation/) in the AWS Management console. 
 2. The first time you use AWS Lake Formation, you need to configure an Adminstrator. On the "Welcome to Lake Formation" dialog, leave "Add myself" selected and click "Get started".
 ![](/images/lakeformation/welcome.PNG)
 3. Click on "Settings, and uncheck the 2 checkboxes under "Data catalog settings", then click "Save".
@@ -108,14 +106,14 @@ In this lab, we're going to use a very small dataset that containers some sensit
 
 1. Download the following CSV file with dummy customer data: [customers.csv](data/customers.csv)
 2. Navigate to S3 in the AWS Management Console, and click on the bucket named "<accountID>-macielflab-data".
-3. Click "Create folder", and enter "customers" as the Folder name. Click "Create folder".
+3. Click "Create folder", and enter "Customers" as the Folder name - note that this name is case sensitive. Click "Create folder".
 ![](/images/s3/createfolder.PNG)
 4. Click into the newly created folder, click "Upload". Select the CSV file you downloaded earlier and click "Upload" to load the data into the bucket.
 ![](/images/s3/upload.PNG)
 
 ## Step 4 - Populate the Data Catalog
 
-1. Navigate to AWS Glue in the AWS Management Console. 
+1. Navigate to [AWS Glue](https://console.aws.amazon.com/glue) in the AWS Management Console. 
 2. click on "Crawlers" in the navigation pane.
 3. Select the checkbox next to the "macielflab-CustomerDataCrawler" crawler, then click "Run crawler".
 4. The crawler may take 1-2 minutes to complete. You should see the status change to "Stopping" or "Ready", with 1 table created. 
@@ -127,7 +125,7 @@ In the next steps, we'll configure Lake Formation tags on the database and check
 
 In this step, we're going to configure our Lake Formation LFTag ontology, set LF-Tag permissions and assign values to our customer table and datbase. 
 
-1. Navigate to Lake Formation in the AWS Management Console. 
+1. Navigate to [Lake Formation](https://console.aws.amazon.com/lakeformation) in the AWS Management Console. 
 2. Click on "Tables" in the navigation panel to confirm that our customer table has been created correctly. 
 ![](/images/lakeformation/table.PNG)
 3. Click on "LF-Tags" in the AWS Management Console.
@@ -173,7 +171,7 @@ The final step in this section is allocate "Classification=UNCLASSIFIED" to the 
 
 ## Step 5 - Validate permissions will Amazon Athena
 
-1. Navigate to Amazon Athena in the AWS Management Console.
+1. Navigate to [Amazon Athena](https://console.aws.amazon.com/athena) in the AWS Management Console.
 2. If this is the first time you're using Amazon Athena, click the "Explore the query editor" button; otherwise, click on "Query editor" in the navigation panel.
 3. Click on the "Settings" tab, then click on the "Manage" button.
 4. In the "Manage settings" page, for "Query result location and encryption" browse to the bucket named "<accountID>-macielflab-athena", then click "Save".
@@ -187,7 +185,7 @@ As you can see, the dataset includes some data that is potentially PII or sensit
 
 ## Step 6 - Extend the AWS Step Functions state machine
 
-1. Navigate to AWS Step Functions in the AWS Management Console.
+1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/stepfunctions) in the AWS Management Console.
 2. You will see that a placeholder state machine named "macielflab-macieFindingOrchestration" has been created for you.
 3. Click on this state machine, the click the "Edit" button.
 4. On the next page, click on the "Workflow Studio" button in the top right hand corner. This will show you the initial state machine.
@@ -228,11 +226,12 @@ As you can see, the dataset includes some data that is potentially PII or sensit
 ```
 ![](/images/stepfunctions/action-updatetags.PNG)
 17. Click on the "Apply and exit" button in the top right hand corner of the page, then click "Save". 
+
 18. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.	
 
 ## Step 7 - Create an AWS EventBridge rule
 Next, let's create an EventBridge rule that will trigger our state machine each time the Amazon Macie classification job completes. 
-1. Navigate to Amazon EventBridge in the AWS Management Console, and click "Create rule".
+1. Navigate to [Amazon EventBridge](https://console.aws.amazon.com/eventbridge) in the AWS Management Console, and click "Create rule".
 2. Enter "MacieLFLab-StartFunctionOnJobComplete" as the rule "Name", then click "Next".
 ![](/images/eventbridge/rule1.PNG)
 3. Under "Event pattern" at the bottom of the next page, select "Macie" in the "AWS Service" dropdown.
@@ -248,7 +247,7 @@ Next, let's create an EventBridge rule that will trigger our state machine each 
 
 ## Step 8 - Create the Amazon Macie classification job
 Our final task is to create and run an Amazon Macie classification job, and verify the results. 
-1. Navigate to Amazon Macie in the AWS Management Console. 
+1. Navigate to [Amazon Macie](https://console.aws.amazon.com/macie) in the AWS Management Console. 
 2. If this if the first time you've used Amazon Macie in the account, you will need to enable the service. Click on "Get started". Review the Macie information, then click "Enable Macie".
 3. Click "Jobs" in the navigation panel, then click "Create job"
 4. Mark the checkbox next to the bucket named "<accountID>-macielflab-data>". Leave all other buckets unchecked, then click "Next".
@@ -266,7 +265,7 @@ Our final task is to create and run an Amazon Macie classification job, and veri
 ## Step 9 - Validate the Changes
 
 
-1. Navigate to Amazon Athena in the AWS Management Console.
+1. Navigate to [Amazon Athena](https://console.aws.amazon.com/athena) in the AWS Management Console.
 2. Select the "Editor" tab, and execute the following statement again:
 ```
 SELECT * FROM "customer"."customers" limit 10;
@@ -274,7 +273,7 @@ SELECT * FROM "customer"."customers" limit 10;
 ![](/images/athena/data-after.PNG)
 As you can now see, the fields identified by the Macie classification job no longer appear in the query, as we don't have permission to view the columns tagged as "FINANCIAL_INFORMATION" or "PERSONAL_INFORMATION"
 
-3. Let's also also check the customer table in Lake Formation.  Navigate to AWS Lake Formation in the AWS Management Console.
+3. Let's also also check the customer table in Lake Formation.  Navigate to  [AWS Lake Formation](https://console.aws.amazon.com/lakeformation) in the AWS Management Console.
 4. Click on "LF-Tags" in the navigation panel, then click on the "Classification" tag to see the values. Note the LF-tag values for each column.
 ![](/images/lakeformation/final-tags.PNG)
 
