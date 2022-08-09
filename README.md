@@ -14,7 +14,7 @@ In this lab, we will load some simple customer data into a bucket, configure AWS
 ## Architecture
 
 In this lab, we will create the following architecture.
-![](/images/architecture.png)
+![](/images/architecture.PNG)
 
 The end solution will perform the following steps:
 1. An AWS Glue crawler will populate the data catalog and create the "Customers" table in the "Customer" database in the catalog. 
