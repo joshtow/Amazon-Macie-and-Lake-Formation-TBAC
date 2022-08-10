@@ -185,7 +185,7 @@ As you can see, the dataset includes some data that is potentially PII or sensit
 
 ## Step 6 - Extend the AWS Step Functions state machine
 
-1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/stepfunctions) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. You will see that a placeholder state machine named "macielflab-macieFindingOrchestration" has been created for you.
 3. Click on this state machine, the click the "Edit" button.
 4. On the next page, click on the "Workflow Studio" button in the top right hand corner. This will show you the initial state machine.
