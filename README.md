@@ -4,14 +4,14 @@ This lab is provided as part of [AWS Innovate Data Edition](https://aws.amazon.c
 
 :information_source: You will run this lab in your own AWS account and running this lab will incur some costs. Please follow directions at the end of the lab to remove resources to avoid future costs.
 
-Amazon Macie using Machine Learning to discover sensitive data in S3 buckets. Amazon Lake Formation provides Tag-Based Access Control to provide a scalable and flexible way to manage data access in the data lake. In this lab, we will configure a Amazon Macie job to automatically detect sensitive data in an S3 bucket and apply appropriate tags in Lake Formation.
+Amazon Macie using Machine Learning to discover sensitive data in S3 buckets. AWS Lake Formation provides Tag-Based Access Control to provide a scalable and flexible way to manage data access in the data lake. In this lab, we will configure a Amazon Macie job to automatically detect sensitive data in an S3 bucket and apply appropriate tags in AWS Lake Formation.
 
 
 ## Overview
 
 In this lab, we will use Amazon Macie to identify sensitive data in a data lake, and automatically AWS Lake Formation Tag Based Access Control (TBAC) technicals to secure the data and ensure there is no unauthorized access.
 
-Amazon Macie is a fully managed data security and data privacy service that uses machine learning and pattern matching to discover and protect your sensitive data in AWS. AWS Lake Formation is a service that makes it easy to set up a secure data lake in days, allowing you to ensure secure access to your sensitive data using granular controls at the column, row, and cell-levels. Lake Formation tag-based access control (LF-TBAC) works with IAM's attribute-based access control (ABAC) to provide fine-grained access to your data lake resources and data.
+Amazon Macie is a fully managed data security and data privacy service that uses machine learning and pattern matching to discover and protect your sensitive data in AWS. AWS Lake Formation is a service that makes it easy to set up a secure data lake in days, allowing you to ensure secure access to your sensitive data using granular controls at the column, row, and cell-levels. AWS Lake Formation tag-based access control (LF-TBAC) works with IAM's attribute-based access control (ABAC) to provide fine-grained access to your data lake resources and data.
 
 In this lab, we will load some simple customer data into a bucket, configure AWS Lake Formation access controls and catalog the data with AWS Glue. We will tag the data by default as "Sensitive". We will then trigger a Macie classification job to scan the data and identify any potentially sensitive data in the bucket. These findings will be passed to a AWS Step Functions state machine to orchestrate the process of updating the tags to mark individual columns identified by Macie as personal or financial information.  Finally, we will use Amazon Athena to query the data and ensure we only have access to the right data.
 
@@ -57,23 +57,24 @@ This template will create the following resources in your account:
 
 1. Click on the following link to launch the CloudFormation process. Please double check you are in the correct account and region.
 [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=macilflab-foundation&templateURL=https://s3.amazonaws.com/ee-assets-prod-us-east-1/modules/1e02deca779a4be58b9d50513a464cdc/v1/macielflab/macielflab-template.json)
-2. For "Stack name", enter "macilflab-foundation", the click "Next".
+2. On the first screen, the values will be prepopulated by the link. Click next.
+3. For "Stack name", leave "macilflab-foundation" and click "Next".
 ![](/images/cloudformation/stackdetails.PNG)
-3. On the "Configure stack options" page, leave all the default values and click "Next".
-4. On the final page, scroll to the end of the page, and mark the check box next to "I acknowledge..." and click "Create stack".
+4. On the "Configure stack options" page, leave all the default values and click "Next".
+5. On the final page, scroll to the end of the page, and mark the check box next to "I acknowledge..." and click "Create stack".
 ![](/images/cloudformation/ackcreate.PNG)
-5. It should take roughly 3 minutes to complete.
+6. It should take roughly 3 minutes to complete.
 
 
 ## Step 1 - Configure AWS Lake Formation
 
 :information_source: If you are already using AWS Lake Formation in this account, you can skip this step, and proceed directly to Step 2. 
 
-:information_source: If you are not already using Lake Formation, but do have resources using the AWS Glue Catalog, please consider impact carefully and permissions will need to be updated. These steps should be completed in a non-production/sandbox account.
+:information_source: If you are not already using AWS Lake Formation, but do have resources using the AWS Glue Catalog, please consider impact carefully and permissions will need to be updated. These steps should be completed in a non-production/sandbox account.
 
-By default, AWS Lake Formation uses the IAMAllowedPrincipals group to provide super permissions to users and roles, effectively delegating access control to IAM policies. Before we can use AWS Lake Formation to manage access to our data, we need to revoke access provided by the IAMAllowedPrincipals group. In this way, IAM policies provide coarse grained permssions, while Lake Formation manages fine grained access control to catalog resources and data.
-1. Navigate to [Lake Formation](https://console.aws.amazon.com/lakeformation/) in the AWS Management console. Confirm that you are in the correct Region.
-2. The first time you use AWS Lake Formation, you need to configure an Adminstrator. On the "Welcome to Lake Formation" dialog, leave "Add myself" selected and click "Get started".
+By default, AWS Lake Formation uses the IAMAllowedPrincipals group to provide super permissions to users and roles, effectively delegating access control to IAM policies. Before we can use AWS Lake Formation to manage access to our data, we need to revoke access provided by the IAMAllowedPrincipals group. In this way, IAM policies provide coarse grained permssions, while AWS Lake Formation manages fine grained access control to catalog resources and data.
+1. Navigate to [AWS Lake Formation](https://console.aws.amazon.com/lakeformation/) in the AWS Management console. Confirm that you are in the correct Region.
+2. The first time you use AWS Lake Formation, you need to configure an Adminstrator. On the "Welcome to AWS Lake Formation" dialog, leave "Add myself" selected and click "Get started".
 ![](/images/lakeformation/welcome.PNG)
 3. Click on "Settings, and uncheck the 2 checkboxes under "Data catalog settings", then click "Save".
 ![](/images/lakeformation/catalogsettings.PNG)
@@ -91,7 +92,7 @@ By default, AWS Lake Formation uses the IAMAllowedPrincipals group to provide su
 
 In this step, we are going to grant permission for the glue crawler to create tables in our database.
 
-1. In Lake Formation, click on "Data lake permissions", then click "Grant".
+1. In AWS Lake Formation, click on "Data lake permissions", then click "Grant".
 2. In the "IAM users and roles" dropdown, select the "macielflab-GlueExecutionRole".
 ![](/images/lakeformation/glueexecution-principal.PNG)
 3. Under "LF-Tags" or catalog resources, select "Named data catalog resources".
@@ -108,9 +109,9 @@ We have now granted permission for the Glue crawler to create a table in our dat
 
 In this lab, we're going to use a very small dataset that containers some sensitive personal and financial information. 
 
-1. Download the following CSV file with dummy customer data: [customers.csv](data/customers.csv)
-2. Navigate to S3 in the AWS Management Console, and click on the bucket named "<accountID>-macielflab-data".
-3. Click "Create folder", and enter "Customers" as the Folder name - note that this name is case sensitive. Click "Create folder".
+1. Download the following CSV file with dummy customer data: [customers.csv](data/customers.csv). Note: click on the link, click on "Raw" and save the file to your local disk.
+2. Navigate to [Amazon S3](https://console.aws.amazon.com/s3/ in the AWS Management Console, and click on the bucket named "<accountID>-macielflab-data".
+3. Click "Create folder", and enter "Customers" as the Folder name - note that this name is case sensitive and ends with an 's'. Click "Create folder".
 ![](/images/s3/createfolder.PNG)
 4. Click into the newly created folder, click "Upload". Select the CSV file you downloaded earlier and click "Upload" to load the data into the bucket.
 ![](/images/s3/upload.PNG)
@@ -123,13 +124,13 @@ In this lab, we're going to use a very small dataset that containers some sensit
 4. The crawler may take 1-2 minutes to complete. You should see the status change to "Stopping" or "Ready", with 1 table created. 
 ![](/images/glue/crawler.PNG)
 
-In the next steps, we'll configure Lake Formation tags on the database and check that we can query the data. 
+In the next steps, we'll configure AWS Lake Formation tags on the database and check that we can query the data. 
 
 ## Step 5 - Create and configure AWS Lake Formation tags
 
-In this step, we're going to configure our Lake Formation LFTag ontology, set LF-Tag permissions and assign values to our customer table and datbase. 
+In this step, we're going to configure our AWS Lake Formation LFTag ontology, set LF-Tag permissions and assign values to our customer table and datbase. 
 
-1. Navigate to [Lake Formation](https://console.aws.amazon.com/lakeformation) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Lake Formation](https://console.aws.amazon.com/lakeformation) in the AWS Management Console. Confirm that you are in the correct Region.
 2. Click on "Tables" in the navigation panel to confirm that our customer table has been created correctly. 
 ![](/images/lakeformation/table.PNG)
 3. Click on "LF-Tags" in the AWS Management Console.
@@ -167,13 +168,14 @@ In this step, we're going to configure our Lake Formation LFTag ontology, set LF
 24. Under "Database permissions", mark the checkbox next to "Describe".
 25. Under "Table permissions", mark the checkbox for "Select" and "Describe". This will grant your current user permission to view and run select statements for any table with tag "Classification=UNCLASSIFIED". 
 ![](/images/lakeformation/grant-user-permissions.PNG)
+
 The final step in this section is allocate "Classification=UNCLASSIFIED" to the database. Table and column resources in this database will inherit this tag value. 
 26. Click on "Database" in the navigation panel, then click on the "customer" database.
 27. Click "Edit LF-tags, then click "Assign new LF-Tag".
 28. For "Assigned keys", select "Classification". For values, select "UNCLASSIFIED" only. Click Save.
 ![](/images/athena/managesettings.PNG)
 
-## Step 5 - Validate permissions will Amazon Athena
+## Step 5 - Validate permissions with Amazon Athena
 
 1. Navigate to [Amazon Athena](https://console.aws.amazon.com/athena) in the AWS Management Console. Confirm that you are in the correct Region.
 2. If this is the first time you're using Amazon Athena, click the "Explore the query editor" button; otherwise, click on "Query editor" in the navigation panel.
@@ -203,14 +205,23 @@ As you can see, the dataset includes some data that is potentially PII or sensit
 9. In the state search bar, enter "Map"
 
 ![](/images/stepfunctions/action-map.PNG)
+
 10. Click and drag a "Map" state to the state machine between the "Transform Payload" and the "Success" states.
+
 11. With the "Map" state selected, enter "For each classification" as the "State name".
+
 12. For "Path to items array", enter "$.body.classifications".
+
 ![](/images/stepfunctions/action-foreach.PNG)
+
 13. In the state search bar, enter "addLFT".
+
 ![](/images/stepfunctions/action-addLFT.PNG)
+
 14. Drag the "AddLFTagsToResource" state to the "Drop state here" placeholder.
+
 15. With the "AddLFTagsToResource" state selected, enter "Update Column Classification Tag"
+
 16. For API Parameters, enter the following JSON:
 ```
 {
@@ -230,13 +241,14 @@ As you can see, the dataset includes some data that is potentially PII or sensit
 }
 ```
 ![](/images/stepfunctions/action-updatetags.PNG)
+
 17. Click on the "Apply and exit" button in the top right hand corner of the page, then click "Save". 
 
 18. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.	
 
 ## Step 7 - Create an AWS EventBridge rule
 Next, let's create an EventBridge rule that will trigger our state machine each time the Amazon Macie classification job completes. 
-1. Navigate to [Amazon EventBridge](https://console.aws.amazon.com/eventbridge) in the AWS Management Console. Confirm that you are in the correct Region and click "Create rule". 
+1. Navigate to [Amazon EventBridge](https://console.aws.amazon.com/events) in the AWS Management Console. Confirm that you are in the correct Region and click "Create rule". 
 2. Enter "MacieLFLab-StartFunctionOnJobComplete" as the rule "Name", then click "Next".
 ![](/images/eventbridge/rule1.PNG)
 3. Under "Event pattern" at the bottom of the next page, select "Macie" in the "AWS Service" dropdown.
@@ -255,7 +267,7 @@ Our final task is to create and run an Amazon Macie classification job, and veri
 1. Navigate to [Amazon Macie](https://console.aws.amazon.com/macie) in the AWS Management Console. Confirm that you are in the correct Region.
 2. If this if the first time you've used Amazon Macie in the account, you will need to enable the service. Click on "Get started". Review the Macie information, then click "Enable Macie".
 3. Click "Jobs" in the navigation panel, then click "Create job"
-4. Mark the checkbox next to the bucket named "<accountID>-macielflab-data>". Leave all other buckets unchecked, then click "Next".
+4. Mark the checkbox next to the bucket named "<accountID>-macielflab-data". Leave all other buckets unchecked, then click "Next". If you don't see the bucket, try refreshing the page.
 ![](/images/macie/job1.PNG)
 5. Review the S3 buckets, then click "Next".
 6. On the "Refine the scope" page, select "One-time job", then click "Next".
@@ -278,13 +290,13 @@ SELECT * FROM "customer"."customers" limit 10;
 ![](/images/athena/data-after.PNG)
 As you can now see, the fields identified by the Macie classification job no longer appear in the query, as we don't have permission to view the columns tagged as "FINANCIAL_INFORMATION" or "PERSONAL_INFORMATION"
 
-3. Let's also also check the customer table in Lake Formation.  Navigate to  [AWS Lake Formation](https://console.aws.amazon.com/lakeformation) in the AWS Management Console.
+3. Let's also also check the customer table in AWS Lake Formation.  Navigate to  [AWS Lake Formation](https://console.aws.amazon.com/lakeformation) in the AWS Management Console.
 4. Click on "LF-Tags" in the navigation panel, then click on the "Classification" tag to see the values. Note the LF-tag values for each column.
 ![](/images/lakeformation/final-tags.PNG)
 
 ## Conclusions and Next Steps
 
-Congratulations on completing this lab. In this exercise, we have created and configured Lake Formation Tag Based Access Control (TBAC) and used an Amazon Macie job to automatically detect sensitive data and update AWS Lake Formation tags accordingly. 
+Congratulations on completing this lab. In this exercise, we have created and configured AWS Lake Formation Tag Based Access Control (TBAC) and used an Amazon Macie job to automatically detect sensitive data and update AWS Lake Formation tags accordingly. 
 
 For the purposes of this lab, we have initiated the Macie job as a One-off Job that we create manually. As a next step, you could look at using AWS EventBridge and AWS Step Functions to create and run the job automatically each time data is loaded to the S3 bucket, or potentially every time the catalog is updated via the crawler. You could also configure the Amazon Macie classification job to run on a scheduled basis. 
 
@@ -304,7 +316,7 @@ For the purposes of this lab, we have initiated the Macie job as a One-off Job t
 2. This will remove all resources defined in the stack. Monitor the progress to ensure that all resources have been removed.
 
 ### Revert changes in AWS Lake Formation - optional.
-1. To revert the Lake Formation changes, navigate to AWS Lake Formation in the AWS Management Console. 
+1. To revert the AWS Lake Formation changes, navigate to AWS Lake Formation in the AWS Management Console. 
 2. Click on "Settings" in the navigation panel, then mark the two check boxes under "Default permissions for newly created databases and tables". Click Save.
 3. Click on "Administrative roles and tasks" in the navigation panel. 
 4. Under "Data lake administrators", click "Choose adminstrators". 
