@@ -178,13 +178,15 @@ The final step in this section is allocate "Classification=UNCLASSIFIED" to the 
 
 ![](/images/athena/managesettings.PNG)
 
-## Step 5 - Validate permissions with Amazon Athena
+## Step 6 - Validate permissions with Amazon Athena
 
 1. Navigate to [Amazon Athena](https://console.aws.amazon.com/athena) in the AWS Management Console. Confirm that you are in the correct Region.
 2. If this is the first time you're using Amazon Athena, click the "Explore the query editor" button; otherwise, click on "Query editor" in the navigation panel.
 3. Click on the "Settings" tab, then click on the "Manage" button.
 4. In the "Manage settings" page, for "Query result location and encryption" browse to the bucket named "<accountID>-macielflab-athena", then click "Save".
+  
 ![](/images/athena/managesettings.PNG)
+  
 5. Select the "Editor" tab, and execute the following statement:
 ```
 SELECT * FROM "customer"."customers" limit 10;
@@ -192,42 +194,43 @@ SELECT * FROM "customer"."customers" limit 10;
 ![](/images/athena/data-before.PNG)
 As you can see, the dataset includes some data that is potentially PII or sensitive financial data. In the next steps, we will Amazon Macie and AWS Step Functions to automatically update the tag values. When we re-run this query, we will no longer be able to see the fields. 
 
-## Step 6 - Extend the AWS Step Functions state machine
+## Step 7 - Extend the AWS Step Functions state machine
 
 1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. You will see that a placeholder state machine named "macielflab-macieFindingOrchestration" has been created for you.
 3. Click on this state machine, the click the "Edit" button.
 4. On the next page, click on the "Workflow Studio" button in the top right hand corner. This will show you the initial state machine.
-![](/images/stepfunctions/data-before.PNG)
+  
+![](/images/stepfunctions/placeholder.PNG)
+  
 5. In the seach bar on the left hand side, search for "invoke lambda"
+  
 ![](/images/stepfunctions/action-invokelambda.PNG)
+  
 6. Click and drag the "Invoke Lambda" state to just above the "Success" state in the state machine.
 7. With the "Lambda Invoke" state selected, enter "Transform Payload" as the "State name".
 8. Under "API Parameters", for "Function name", select "macielflab-transformationFunction$latest".
+  
 ![](/images/stepfunctions/action-transformPayload.PNG)
+  
 9. In the state search bar, enter "Map"
 
 ![](/images/stepfunctions/action-map.PNG)
 
 10. Click and drag a "Map" state to the state machine between the "Transform Payload" and the "Success" states.
-
 11. With the "Map" state selected, enter "For each classification" as the "State name".
-
 12. For "Path to items array", enter "$.body.classifications".
-
 13. For "Maximum concurrency", enter "1".
 
 ![](/images/stepfunctions/action-foreach.PNG)
 
-13. In the state search bar, enter "addLFT".
+14. In the state search bar, enter "addLFT".
 
 ![](/images/stepfunctions/action-addLFT.PNG)
 
-14. Drag the "AddLFTagsToResource" state to the "Drop state here" placeholder.
-
-15. With the "AddLFTagsToResource" state selected, enter "Update Column Classification Tag"
-
-16. For API Parameters, enter the following JSON:
+15. Drag the "AddLFTagsToResource" state to the "Drop state here" placeholder.
+16. With the "AddLFTagsToResource" state selected, enter "Update Column Classification Tag"
+17. For API Parameters, enter the following JSON:
 ```
 {
   "LfTags": [
@@ -247,11 +250,10 @@ As you can see, the dataset includes some data that is potentially PII or sensit
 ```
 ![](/images/stepfunctions/action-updatetags.PNG)
 
-17. Click on the "Apply and exit" button in the top right hand corner of the page, then click "Save". 
+18. Click on the "Apply and exit" button in the top right hand corner of the page, then click "Save". 
+19. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.	
 
-18. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.	
-
-## Step 7 - Create an AWS EventBridge rule
+## Step 8 - Create an AWS EventBridge rule
 Next, let's create an EventBridge rule that will trigger our state machine each time the Amazon Macie classification job completes. 
 1. Navigate to [Amazon EventBridge](https://console.aws.amazon.com/events) in the AWS Management Console. Confirm that you are in the correct Region and click "Create rule". 
 2. Enter "MacieLFLab-StartFunctionOnJobComplete" as the rule "Name", then click "Next".
@@ -267,7 +269,7 @@ Next, let's create an EventBridge rule that will trigger our state machine each 
 8. On the "Configure tags" page, click "Next". 
 9. On the final "Review and create" page, click "Create rule".
 
-## Step 8 - Create the Amazon Macie classification job
+## Step 9 - Create the Amazon Macie classification job
 Our final task is to create and run an Amazon Macie classification job, and verify the results. 
 1. Navigate to [Amazon Macie](https://console.aws.amazon.com/macie) in the AWS Management Console. Confirm that you are in the correct Region.
 2. If this if the first time you've used Amazon Macie in the account, you will need to enable the service. Click on "Get started". Review the Macie information, then click "Enable Macie".
@@ -284,7 +286,7 @@ Our final task is to create and run an Amazon Macie classification job, and veri
 10. Review the job details on the final page, then click "Submit". This job may take 10-12 minutes to complete. 
 ![](/images/macie/job4.PNG)
 
-## Step 9 - Validate the Changes
+## Step 10 - Validate the Changes
 
 
 1. Navigate to [Amazon Athena](https://console.aws.amazon.com/athena) in the AWS Management Console. Confirm that you are in the correct Region.
