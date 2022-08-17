@@ -152,22 +152,30 @@ In this step, we're going to configure our AWS Lake Formation LFTag ontology, se
 14. For "LF-Tags or catalog resources", select "Named data catalog resources"
 15. In the "Databases" dropdown, select "customer".
 16. In the "Tables" dropdown, select "customers".
+
 ![](/images/lakeformation/grant-stepfunction-resources.PNG)
+
 17. Under "Table permissions", mark the checkboxes next to "Super" for both "Table" permissions and "Grantable" permissions.
 
 ![](/images/lakeformation/grant-stepfunction-tags-2.PNG)
+
 18. Remaining in the "Data lake permissions" page, click "Grant".
 19. For "Principals", under "IAM users and roles",select the role or user you are using to complete these labs.
 20. For "LF-Tags or catalog resournces", leave "Resources matched by LF-Tags" selected, then click "Add LF-Tag". Select "Classification" as the "Key" and "UNCLASSIFIED" only as the "Values".
+
 ![](/images/lakeformation/grant-user-tags.PNG)
+
 21. Under "Database permissions", mark the checkbox next to "Describe".
 22. Under "Table permissions", mark the checkbox for "Select" and "Describe". This will grant your current user permission to view and run select statements for any table with tag "Classification=UNCLASSIFIED". 
+
 ![](/images/lakeformation/grant-user-permissions.PNG)
 
 The final step in this section is allocate "Classification=UNCLASSIFIED" to the database. Table and column resources in this database will inherit this tag value. 
+
 23. Click on "Database" in the navigation panel, then click on the "customer" database.
 24. Click "Edit LF-tags, then click "Assign new LF-Tag".
 25. For "Assigned keys", select "Classification". For values, select "UNCLASSIFIED" only. Click Save.
+
 ![](/images/athena/managesettings.PNG)
 
 ## Step 5 - Validate permissions with Amazon Athena
