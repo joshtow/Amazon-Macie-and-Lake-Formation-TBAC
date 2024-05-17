@@ -1,9 +1,8 @@
 # Amazon Macie and Lake Formation TBAC
 
-:information_source: You will run this lab in your own AWS account and running this lab will incur some costs. Please follow directions at the end of the lab to remove resources to avoid future costs.
+:information_source: You will run this lab in your own AWS account; this lab will incur some costs so please follow directions at the end of the lab to remove resources to avoid additional costs.
 
 Amazon Macie using Machine Learning to discover sensitive data in S3 buckets. AWS Lake Formation provides Tag-Based Access Control to provide a scalable and flexible way to manage data access in the data lake. In this lab, we will configure a Amazon Macie job to automatically detect sensitive data in an S3 bucket and apply appropriate tags in AWS Lake Formation.
-
 
 ## Overview
 
